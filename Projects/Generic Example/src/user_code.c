@@ -1,7 +1,5 @@
 /*
-/*
  * user_code.c - All User Code should be applied here unless specified otherwise.
- *
  *
  */
 
@@ -157,11 +155,6 @@ void events_Startup()
 }
 /* End Startup Functions */
 
-void onSerialReceive(uint8_t *serialMessage)
-{
-	// What do you want to do when you receive a UART message.. ?
-	// printf("%07.4f message received...\r\n",getTimestamp());
-}
 void onSerialReceive(uint8_t *serialMessage)
 {
 	// What do you want to do when you receive a UART message.. ?
