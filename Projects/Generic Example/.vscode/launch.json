@@ -12,11 +12,11 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "C:/Users/mitch/Desktop/CAN_Triple/Projects/Generic Example/.pio/build/CAN_Triple/firmware.elf",
+            "executable": "C:/Users/Clay/Documents/GitHub/CAN_Triple_MossCLA/Projects/Generic Example/.pio/build/CAN_Triple/firmware.elf",
             "projectEnvName": "CAN_Triple",
-            "toolchainBinDir": "C:/Users/mitch/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
+            "toolchainBinDir": "C:/Users/Clay/.platformio/packages/toolchain-gccarmnoneeabi/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "C:/Users/mitch/.platformio/platforms/ststm32/misc/svd/STM32G473xx.svd",
+            "svdPath": "C:/Users/Clay/.platformio/platforms/ststm32/misc/svd/STM32G473xx.svd",
             "preLaunchTask": {
                 "type": "PlatformIO",
                 "task": "Pre-Debug"
@@ -26,21 +26,21 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "C:/Users/mitch/Desktop/CAN_Triple/Projects/Generic Example/.pio/build/CAN_Triple/firmware.elf",
+            "executable": "C:/Users/Clay/Documents/GitHub/CAN_Triple_MossCLA/Projects/Generic Example/.pio/build/CAN_Triple/firmware.elf",
             "projectEnvName": "CAN_Triple",
-            "toolchainBinDir": "C:/Users/mitch/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
+            "toolchainBinDir": "C:/Users/Clay/.platformio/packages/toolchain-gccarmnoneeabi/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "C:/Users/mitch/.platformio/platforms/ststm32/misc/svd/STM32G473xx.svd"
+            "svdPath": "C:/Users/Clay/.platformio/platforms/ststm32/misc/svd/STM32G473xx.svd"
         },
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (without uploading)",
-            "executable": "C:/Users/mitch/Desktop/CAN_Triple/Projects/Generic Example/.pio/build/CAN_Triple/firmware.elf",
+            "executable": "C:/Users/Clay/Documents/GitHub/CAN_Triple_MossCLA/Projects/Generic Example/.pio/build/CAN_Triple/firmware.elf",
             "projectEnvName": "CAN_Triple",
-            "toolchainBinDir": "C:/Users/mitch/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
+            "toolchainBinDir": "C:/Users/Clay/.platformio/packages/toolchain-gccarmnoneeabi/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "C:/Users/mitch/.platformio/platforms/ststm32/misc/svd/STM32G473xx.svd",
+            "svdPath": "C:/Users/Clay/.platformio/platforms/ststm32/misc/svd/STM32G473xx.svd",
             "loadMode": "manual"
         }
     ]
