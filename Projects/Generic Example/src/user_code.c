@@ -41,6 +41,21 @@ uint32_t dsc_state = 0;
 float fuel_lev_r = 0;
 float fuel_lev_l = 0;
 float fuel_lev = 0;
+uint32_t engine_run = 0;
+uint8_t engine_state = 0; // 0 = off, 1 = starting, 2 = running
+uint32_t moving_forward = 0;
+float engine_rpm = 0.0f;
+float minirpm = 0.0f;
+float vehicleSpeed = 0.0f;
+float sa_temp = 0.0f;
+uint8_t engineData[8];
+uint8_t rpmData[8];
+uint32_t trimPos = 0;
+uint32_t trimMin = 0;
+uint32_t trimMax = 5;
+uint32_t lastTrim = 0;
+uint32_t ac_button = 0;
+uint8_t counter1d0 = 0;
 
 char debug_buffer[100];
 
@@ -146,8 +161,8 @@ void events_Startup()
 	setupCANbus(CAN_1, 1000000, NORMAL_MODE); // Haltech - 1mb
 	setupCANbus(CAN_2, 500000, NORMAL_MODE);  // Mini PT - 500kb
 	// setupCANbus(CAN_3, 1000000, NORMAL_MODE);
-	setCAN_Termination(CAN_1, true);
-	setCAN_Termination(CAN_2, false);
+	setCAN_Termination(CAN_1, false);
+	setCAN_Termination(CAN_2, true);
 	// setCAN_Termination(CAN_3, true);
 	startCANbus(CAN_1);
 	startCANbus(CAN_2);
@@ -172,8 +187,49 @@ void onReceive(CAN_Message Message)
 	{
 		// serialPrint("CAN 1 - received a message..\r\n");
 		// send_message(CAN_2, Message.is_extended_id, Message.arbitration_id, Message.dlc, Message.data);
-	}
 
+		if (Message.arbitration_id == 0x360) // Engine Speed - 864 // DONE!
+		{
+			uint32_t engine_speed = (Message.data[0] << 8) | (Message.data[1]);
+			engine_rpm = process_float_value(engine_speed, 0xFFFF, false, 1, 0, 0);
+			if (engine_rpm > 10)
+			{
+				minirpm = engine_rpm;
+			}
+
+			// Set engine state for enabling EPAS and disabling starter
+			if (engine_rpm > 900)
+			{
+				engine_state = 2;
+			}
+			else if (engine_rpm < 901 && engine_rpm > 10)
+			{
+				engine_state = 1;
+			}
+			else if (engine_rpm < 11)
+			{
+				engine_state = 0;
+			}
+		}
+		if (Message.arbitration_id == 0x370) // Vehicle Speed - 880 // DONE!
+		{
+			uint32_t vehicle_speed_data = (Message.data[0] << 8) | (Message.data[1]);
+			vehicleSpeed = process_float_value(vehicle_speed_data, 0xFFFF, false, 0.1, 0, 0);
+			// Note: This is in KM/H
+			// if (vehicleSpeed > 0)
+			// {
+			// 	snprintf(debug_buffer, sizeof(debug_buffer), "Haltech MPH: %2.1f\r\n", vehicleSpeed);
+			// 	// snprintf(debug_buffer, sizeof(debug_buffer), "Wheel Speeds: %2.1f and hz == %2.2f \r\n", wheel_speed_fl, flws_2_hz);
+			// 	serialPrint(debug_buffer);
+			// }
+		}
+		if (Message.arbitration_id == 0x3e0) // Coolant Temp - 992
+		{
+			uint32_t haltech_temp = (Message.data[0] << 8) | (Message.data[1]);
+			sa_temp = process_float_value(haltech_temp, 0xFFFF, false, 0.1, 0, 4);
+			sa_temp -= 273.15; // conversion from kelvin to celcius
+		}
+	}
 	if (Message.Bus == CAN_2) // MINI PT
 	{
 		if (Message.arbitration_id == 0x0CE) // Wheel Speeds - 206
@@ -335,6 +391,23 @@ void events_500Hz()
 /* Run 200Hz Functions here - 5ms */
 void events_200Hz()
 {
+	// Mini Tach Here - Disabled to see if we can stop CT from erroring out.
+	// if (engine_run == 1)
+	// {
+	// 	// TODO - Fix scaling for rpmtomini, it may be correct now. Easiest to compare in the car because desk haltech sends zero along with logs.
+	// 	int16_t rpmtomini = (uint16_t)map_float(minirpm, 0, 8400, 0, 32000); // scale in dbc is .25 so i multiplied 8k by 4
+	// 	// printf("Some shit: %d\r\n", rpmtomini);
+	// 	rpmData[0] = (uint8_t)0x7E;
+	// 	rpmData[1] = (uint8_t)0x74;
+	// 	rpmData[2] = (uint8_t)0xFF;
+	// 	rpmData[3] = (uint8_t)0x00;
+	// 	rpmData[4] = (uint8_t)(rpmtomini);
+	// 	rpmData[5] = (uint8_t)(rpmtomini >> 8);
+	// 	rpmData[6] = (uint8_t)0x84;
+	// 	rpmData[7] = (uint8_t)0x00;
+	// 	// printf("Some shit: %d\r\n", engineData);
+	// 	send_message(CAN_2, false, 0x0aa, 8, rpmData);
+	// }
 }
 
 /* Run 100Hz Functions here  - 10ms */
@@ -354,8 +427,7 @@ void events_50Hz()
 	send_message(CAN_1, false, 0x2C0, 8, msgIOBA_1);
 
 	uint16_t ioBA_DPI1_DC = (uint16_t)roundfloat(haltech_IO_Box_A_DPI1_Duty, 1);
-	// uint16_t ioBA_DPI1_Period = (uint16_t)roundfloat(flws_2_hz, 1);
-	uint16_t ioBA_DPI1_Period = (uint32_t)frequency_Hz_to_period_10uS(haltech_IO_Box_A_DPI1_Hz); // Can be edited to take in a general 10uS resolution value instead of frequency conversion function
+	uint16_t ioBA_DPI1_Period = (uint16_t)roundfloat(flws_2_hz, 1);
 	uint16_t ioBA_DPI2_DC = (uint16_t)roundfloat(haltech_IO_Box_A_DPI2_Duty, 1);
 	uint16_t ioBA_DPI2_Period = (uint16_t)roundfloat(frws_2_hz, 1);
 	uint8_t msgIOBA_2[8] = {(uint8_t)(ioBA_DPI1_DC >> 2), (uint8_t)((ioBA_DPI1_DC & 0x03) << 6), (uint8_t)(ioBA_DPI1_Period >> 8), (uint8_t)(ioBA_DPI1_Period), (uint8_t)(ioBA_DPI2_DC >> 2), (uint8_t)((ioBA_DPI2_DC & 0x03) << 6), (uint8_t)(ioBA_DPI2_Period >> 8), (uint8_t)(ioBA_DPI2_Period)};
@@ -372,11 +444,11 @@ void events_50Hz()
 	send_message(CAN_1, false, 0x2C6, 8, msgIOBA_4);
 
 	// IO BOX B
-	uint16_t ioBB_AVI1 = (uint16_t)roundfloat_to_int32(haltech_IO_Box_B_AVI1 * 5 / 4095, 0);
-	uint16_t ioBB_AVI2 = (uint16_t)roundfloat_to_int32(haltech_IO_Box_B_AVI2 * 5 / 4095, 0);
-	uint16_t ioBB_AVI3 = (uint16_t)roundfloat_to_int32(haltech_IO_Box_B_AVI1 * 5 / 4095, 0);
-	uint16_t ioBB_AVI4 = (uint16_t)roundfloat_to_int32(haltech_IO_Box_B_AVI1 * 5 / 4095, 0);
-	uint8_t msgIOBB_1[8] = {(uint8_t)ioBB_AVI1 >> 8, (uint8_t)ioBB_AVI1, (uint8_t)ioBB_AVI2 >> 8, (uint8_t)ioBB_AVI2, (uint8_t)ioBB_AVI3 >> 8, (uint8_t)ioBB_AVI3, (uint8_t)ioBB_AVI4 >> 8, (uint8_t)ioBB_AVI4};
+	uint16_t ioBB_AVI1 = (uint16_t)roundfloat_to_int32(haltech_IO_Box_B_AVI1 * 819, 0); // Sport Button
+	uint16_t ioBB_AVI2 = (uint16_t)roundfloat_to_int32(haltech_IO_Box_B_AVI2 * 819, 0); // Cruise Buttons
+	uint16_t ioBB_AVI3 = (uint16_t)roundfloat_to_int32(trimPos * 819, 0);				// Trim
+	uint16_t ioBB_AVI4 = (uint16_t)roundfloat_to_int32(haltech_IO_Box_B_AVI4 * 819, 0); // Traction Control
+	uint8_t msgIOBB_1[8] = {ioBB_AVI1 >> 8, ioBB_AVI1, ioBB_AVI2 >> 8, ioBB_AVI2, ioBB_AVI3 >> 8, ioBB_AVI3, ioBB_AVI4 >> 8, ioBB_AVI4};
 	send_message(CAN_1, false, 0x2C1, 8, msgIOBB_1);
 
 	uint16_t ioBB_DPI1_DC = (uint16_t)roundfloat(haltech_IO_Box_B_DPI1_Duty, 1);
@@ -400,6 +472,47 @@ void events_50Hz()
 /* Run 20Hz Functions here - 50ms */
 void events_20Hz()
 {
+	// Enable EPAS Here
+	// TODO - Temp Engine, byte 7
+	// engineData[0] = (uint8_t)0x61;
+	// engineData[1] = (uint8_t)0xff;
+	//  printf("Some shit: %2.1f\r\n", minirpm);
+
+	counter1d0 = (counter1d0 + 1) % 15;
+
+	int16_t temptomini = (uint16_t)roundfloat_to_int32(sa_temp + 100 + 48, 0);
+	engineData[0] = (uint8_t)temptomini; // Engine Temp
+	engineData[1] = (uint8_t)temptomini; // Engine Oil Temp
+	// printf("Some shit: %d\r\n", temptomini);
+
+	// Rewrite the following line to a little endian 8 bit value for canbus. Bit position 0 through 3 should equal a counter with a value of 0 to 14 starting a 0 and incrementing 1 each time. Bit position 4 through 5 should have a value of 0 if the engine is not running, 1 if the engine is starting, or two if the engine is running. Bit position 6 through 7 should have a value of 1.
+	// engineData[2] = (uint8_t)0x6e; // 0-3 Counter value 0-14, 4-5 0-off 1-starting 2-running, 6-7 1-engine warm
+	engineData[2] = (uint8_t)((1 << 6) | (engine_state << 4) | counter1d0);
+
+	engineData[3] = (uint8_t)0xd2;
+	engineData[4] = (uint8_t)0x24;
+	engineData[5] = (uint8_t)0x78;
+	engineData[6] = (uint8_t)0xcc;
+	engineData[7] = (uint8_t)0xa4;
+
+	send_message(CAN_2, false, 0x1d0, 8, engineData);
+
+	if (bc_state == 1 && ccplus_state == 1 && lastTrim > 200)
+	{
+		if (trimPos != trimMax)
+		{
+			trimPos += 1;
+		}
+		lastTrim = 0;
+	}
+	if (bc_state == 1 && ccminus_state == 1 && lastTrim > 200)
+	{
+		if (trimPos != trimMin)
+		{
+			trimPos -= 1;
+		}
+		lastTrim = 0;
+	}
 }
 
 /* Run 10Hz Functions here - 100ms */
