@@ -198,16 +198,10 @@ void events_Startup()
 	setupCANbus(CAN_2, 500000, NORMAL_MODE);  // Mini PT - 500KB
 	// setupCANbus(CAN_3, 1000000, NORMAL_MODE);
 	setCAN_Termination(CAN_1, false);
-	setupCANbus(CAN_1, 1000000, NORMAL_MODE); // Haltech - 1mb
-	setupCANbus(CAN_2, 500000, NORMAL_MODE);  // Mini PT - 500kb
-	// setupCANbus(CAN_3, 1000000, NORMAL_MODE);
-	setCAN_Termination(CAN_1, false);
 	setCAN_Termination(CAN_2, true);
-	// setCAN_Termination(CAN_3, true);
 	// setCAN_Termination(CAN_3, true);
 	startCANbus(CAN_1);
 	startCANbus(CAN_2);
-	// startCANbus(CAN_3);
 	// startCANbus(CAN_3);
 }
 /* End Startup Functions */
@@ -216,15 +210,10 @@ void onSerialReceive(uint8_t *serialMessage)
 {
 	// What do you want to do when you receive a UART message.. ?
 	// printf("%07.4f message received...\r\n", getTimestamp());
-	// printf("%07.4f message received...\r\n", getTimestamp());
 }
 
 void onReceive(CAN_Message Message)
 {
-	// char formatted_message[50];
-	// format_CAN_message(&Message, formatted_message, sizeof(formatted_message));
-	// printf("%s\r\n", formatted_message);
-
 	// char formatted_message[50];
 	// format_CAN_message(&Message, formatted_message, sizeof(formatted_message));
 	// printf("%s\r\n", formatted_message);
@@ -497,23 +486,23 @@ void events_500Hz()
 /* Run 200Hz Functions here - 5ms */
 void events_200Hz()
 {
-	// Mini Tach Here - Disabled to see if we can stop CT from erroring out.
-	// if (engine_run == 1)
-	// {
-	// 	// TODO - Fix scaling for rpmtomini, it may be correct now. Easiest to compare in the car because desk haltech sends zero along with logs.
-	// 	int16_t rpmtomini = (uint16_t)map_float(minirpm, 0, 8400, 0, 32000); // scale in dbc is .25 so i multiplied 8k by 4
-	// 	// printf("Some shit: %d\r\n", rpmtomini);
-	// 	rpmData[0] = (uint8_t)0x7E;
-	// 	rpmData[1] = (uint8_t)0x74;
-	// 	rpmData[2] = (uint8_t)0xFF;
-	// 	rpmData[3] = (uint8_t)0x00;
-	// 	rpmData[4] = (uint8_t)(rpmtomini);
-	// 	rpmData[5] = (uint8_t)(rpmtomini >> 8);
-	// 	rpmData[6] = (uint8_t)0x84;
-	// 	rpmData[7] = (uint8_t)0x00;
-	// 	// printf("Some shit: %d\r\n", engineData);
-	// 	send_message(CAN_2, false, 0x0aa, 8, rpmData);
-	// }
+	// Mini Tach Here
+	if (engine_run == 1)
+	{
+		// TODO - Fix scaling for rpmtomini, it may be correct now. Easiest to compare in the car because desk haltech sends zero along with logs.
+		int16_t rpmtomini = (uint16_t)map_float(minirpm, 0, 8400, 0, 32000); // scale in dbc is .25 so i multiplied 8k by 4
+		// printf("Some shit: %d\r\n", rpmtomini);
+		rpmData[0] = (uint8_t)0x7E;
+		rpmData[1] = (uint8_t)0x74;
+		rpmData[2] = (uint8_t)0xFF;
+		rpmData[3] = (uint8_t)0x00;
+		rpmData[4] = (uint8_t)(rpmtomini);
+		rpmData[5] = (uint8_t)(rpmtomini >> 8);
+		rpmData[6] = (uint8_t)0x84;
+		rpmData[7] = (uint8_t)0x00;
+		// printf("Some shit: %d\r\n", engineData);
+		send_message(CAN_2, false, 0x0aa, 8, rpmData);
+	}
 }
 
 /* Run 100Hz Functions here - 10ms */
@@ -711,24 +700,18 @@ void events_20Hz()
 }
 
 /* Run 10Hz Functions here - 100ms */
-/* Run 10Hz Functions here - 100ms */
 void events_10Hz()
 {
 	if (lastTrim < 5000)
 	{
 		lastTrim += 100;
 	}
+}
+
+/* Run 5Hz Functions here - 200ms */
+void events_5Hz()
+{
 	toggleLED(LED_1);
-}
-
-/* Run 5Hz Functions here - 200ms */
-void events_5Hz()
-{
-}
-
-/* Run 5Hz Functions here - 200ms */
-void events_5Hz()
-{
 }
 
 /* Run 2Hz Functions here - 500ms */
